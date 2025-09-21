@@ -7,3 +7,4 @@ albumentations
 numpy
 pandas
 gdown
+huggingface_hub

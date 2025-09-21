@@ -21,12 +21,13 @@ class PassportSegmentationInference:
         print(f"Inference running on: {self.device}")
 
     def load_model(self, model_path):
-        model = U2NET(3, 1)
+        """Load U2NET architecture and apply saved weights (state_dict)."""
+        model = U2NET(3, 1)  # 3 input channels, 1 output channel
         state_dict = torch.load(model_path, map_location=self.device)
         model.load_state_dict(state_dict)
         model.to(self.device)
         model.eval()
-        print(f"✅ Model loaded from {model_path}")
+        print(f"✅ Successfully loaded model weights from {model_path}")
         return model
 
     def get_transform(self):

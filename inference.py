@@ -7,25 +7,26 @@ from torchvision import transforms
 from PIL import Image
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from huggingface_hub import hf_hub_download # 🔹 NEW IMPORT
 
 # Import the U2NET model architecture from your model.py file
 from model import U2NET
-import gdown
 
 
 class PassportSegmentationInference:
-    def __init__(self, model_path, device=None):
+    def __init__(self, device=None): # 🔹 MODEL_PATH removed from init
         self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = self.load_model(model_path)
+        self.model = self.load_model() # 🔹 Changed to call load_model without a path
         self.transform = self.get_transform()
         print(f"Inference running on: {self.device}")
 
-    def load_model(self, model_path):
-        # Auto-download if not found
-        if not os.path.exists(model_path):
-            url = "https://drive.google.com/uc?id=YOUR_FILE_ID_HERE"  # 🔹 replace with your real file ID
-            print("📥 Downloading model weights...")
-            gdown.download(url, model_path, quiet=False)
+    def load_model(self):
+        # 🔹 NEW HUGGING FACE DOWNLOAD LOGIC
+        REPO_ID = "kkriyas/u2net-finetuned"
+        FILENAME = "u2net_finetuned.pth"
+
+        print("📥 Downloading model weights from Hugging Face Hub...")
+        model_path = hf_hub_download(repo_id=REPO_ID, filename=FILENAME)
 
         model = U2NET(3, 1)  # 3 input channels, 1 output channel
         try:
@@ -52,7 +53,7 @@ class PassportSegmentationInference:
         if image is None:
             raise ValueError(f"Could not load image from {image_path}")
         original_image = image.copy()
-        original_size = (image.shape[1], image.shape[0])  # (width, height)
+        original_size = (image.shape[1], image.shape[0]) # (width, height)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         transformed = self.transform(image=image)
         image_tensor = transformed['image'].unsqueeze(0)
@@ -148,7 +149,7 @@ def main():
     OUTPUT_DIR = "inference_results"
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    inferencer = PassportSegmentationInference(MODEL_PATH)
+    inferencer = PassportSegmentationInference() # 🔹 MODEL_PATH removed from instantiation
 
     if not os.path.exists(TEST_IMAGE_PATH):
         print(f"⚠️ Test image not found: {TEST_IMAGE_PATH}")

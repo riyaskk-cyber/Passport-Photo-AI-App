@@ -6,6 +6,4 @@ pillow
 albumentations
 numpy
 pandas
-gdown
 huggingface-hub
-

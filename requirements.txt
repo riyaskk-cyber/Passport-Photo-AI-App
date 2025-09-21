@@ -7,4 +7,5 @@ albumentations
 numpy
 pandas
 gdown
-huggingface_hub
+huggingface-hub
+

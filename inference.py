@@ -14,17 +14,17 @@ from model import U2NET
 
 
 class PassportSegmentationInference:
-    def __init__(self, device=None): # 🔹 MODEL_PATH removed from init
+    def __init__(self, device=None): # 🔹 'model_path' removed from constructor
         self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = self.load_model() # 🔹 Changed to call load_model without a path
+        self.model = self.load_model() # 🔹 'model_path' removed from function call
         self.transform = self.get_transform()
         print(f"Inference running on: {self.device}")
 
-    def load_model(self):
+    def load_model(self): # 🔹 'model_path' removed from this method
         # 🔹 NEW HUGGING FACE DOWNLOAD LOGIC
         REPO_ID = "kkriyas/u2net-finetuned"
         FILENAME = "u2net_finetuned.pth"
-
+        
         print("📥 Downloading model weights from Hugging Face Hub...")
         model_path = hf_hub_download(repo_id=REPO_ID, filename=FILENAME)
 
@@ -149,7 +149,7 @@ def main():
     OUTPUT_DIR = "inference_results"
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    inferencer = PassportSegmentationInference() # 🔹 MODEL_PATH removed from instantiation
+    inferencer = PassportSegmentationInference() # 🔹 'MODEL_PATH' removed from this line
 
     if not os.path.exists(TEST_IMAGE_PATH):
         print(f"⚠️ Test image not found: {TEST_IMAGE_PATH}")

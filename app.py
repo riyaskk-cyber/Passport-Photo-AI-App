@@ -3,23 +3,34 @@ import streamlit as st
 import numpy as np
 import cv2
 import torch
-import gdown
+from huggingface_hub import hf_hub_download
 from model import U2NET
 from inference import PassportSegmentationInference
 
 # ------------------ CONFIG ------------------
-MODEL_PATH = "u2net_finetuned.pth"   # local path for weights
+MODEL_PATH = "u2net_finetuned.pth" # local path for weights
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Auto-download model from Google Drive if missing
-if not os.path.exists(MODEL_PATH):
-    url = "https://drive.google.com/uc?id=1VMWHakp4PDcSWqIMu_cGm930xJEZ3e59"  # 🔹 replace with your actual file ID
-    st.write("📥 Downloading model weights...")
-    gdown.download(url, MODEL_PATH, quiet=False)
+# --- NEW HUGGING FACE DOWNLOAD LOGIC ---
+# Define the repository ID and filename on Hugging Face Hub
+REPO_ID = "kkriyas/u2net-finetuned"
+FILENAME = "u2net_finetuned.pth"
 
+# Use Streamlit's caching to download and cache the model.
+# This function will only run once on the first app load, making it fast.
+@st.cache_resource
+def download_model_from_hub():
+    st.write("📥 Downloading model weights from Hugging Face Hub...")
+    model_path = hf_hub_download(repo_id=REPO_ID, filename=FILENAME)
+    return model_path
+
+# Get the path to the downloaded model file
+model_file_path = download_model_from_hub()
+
+# ----------------------------------------
 @st.cache_resource
 def load_inferencer():
-    return PassportSegmentationInference(MODEL_PATH, device=DEVICE)
+    return PassportSegmentationInference(model_file_path, device=DEVICE)
 
 inferencer = load_inferencer()
 

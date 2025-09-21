@@ -38,13 +38,11 @@ Built as a capstone project for the Data Science & Machine Learning course.
 ---
 
 ## 🚀 Deployment
-Try the live app here 👉 [**Demo App**](https://your-username-passport-photo-app.streamlit.app)  
+Live app 👉 [**Demo App**](https://passport-photo-ai-app-m5zss3y6tpi3abo4knghif.streamlit.app/)  
 
 ⚠️ **Note about model weights:**  
-The trained model file (`u2net_finetuned.pth`) is too large for GitHub.  
-It is stored on **Google Drive** and will be **automatically downloaded** at runtime using `gdown`.  
-
-This means you don’t need to manually download the weights — the app handles it.  
+The trained model (`u2net_finetuned.pth`) is stored on **Hugging Face Hub** instead of GitHub (due to size limits).  
+It will be **automatically downloaded** at runtime using the `huggingface-hub` library.  
 
 ---
 
@@ -52,7 +50,7 @@ This means you don’t need to manually download the weights — the app handles
 Clone the repo and install dependencies:
 
 ```bash
-git clone https://github.com/your-username/passport-photo-app.git
+git clone https://github.com/your-username/passport-Photo-AI-app.git
 cd passport-photo-app
 pip install -r requirements.txt
 streamlit run app.py

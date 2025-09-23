@@ -28,7 +28,7 @@ class PassportSegmentationInference:
 
     def get_transform(self):
         return Compose([
-            Resize(256, 256),   # keep small for speed
+            Resize(512, 512),   # keep small for speed
             Normalize(mean=[0.0, 0.0, 0.0], std=[1.0, 1.0, 1.0]),
             ToTensorV2(),
         ])
@@ -125,3 +125,4 @@ if __name__ == "__main__":
         out = inferencer.resize_passport(out, "passport")
         cv2.imwrite(os.path.join(OUTPUT_DIR, "sample_passport.jpg"), cv2.cvtColor(out, cv2.COLOR_RGB2BGR))
         print("✅ Saved improved passport photo.")
+

@@ -32,7 +32,7 @@ class PassportSegmentationInference:
 
     def get_transform(self):
         return A.Compose([
-            A.Resize(256, 256),
+            A.Resize(320, 320),
             A.Normalize(mean=[0.0, 0.0, 0.0], std=[1.0, 1.0, 1.0]),
             ToTensorV2(),
         ])
@@ -50,11 +50,11 @@ class PassportSegmentationInference:
 
     def postprocess_mask(self, prediction, original_size, threshold=0.6):
         mask = torch.sigmoid(prediction).squeeze().cpu().numpy()
-        mask_resized = cv2.resize(mask, original_size, interpolation=cv2.INTER_LINEAR)
+        mask_resized = cv2.resize(mask, original_size, interpolation=cv2.INTER_CUBIC)
         binary_mask = (mask_resized > threshold).astype(np.uint8)
         return binary_mask, mask_resized
 
-    def clean_mask(self, mask, kernel_size=5):
+    def clean_mask(self, mask, kernel_size=3):
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
         cleaned = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
         cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel)
@@ -96,3 +96,4 @@ class PassportSegmentationInference:
         else:
             size = (600, 600)
         return cv2.resize(image, size, interpolation=cv2.INTER_AREA)
+

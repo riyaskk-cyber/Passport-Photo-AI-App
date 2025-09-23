@@ -50,7 +50,7 @@ class PassportSegmentationInference:
 
     def postprocess_mask(self, prediction, original_size, threshold=0.6):
         mask = torch.sigmoid(prediction).squeeze().cpu().numpy()
-        mask_resized = cv2.resize(mask, original_size, interpolation=cv2.INTER_CUBIC)
+        mask_resized = cv2.resize(mask, original_size, interpolation=cv2.INTER_AREA)
         binary_mask = (mask_resized > threshold).astype(np.uint8)
         return binary_mask, mask_resized
 
@@ -66,7 +66,7 @@ class PassportSegmentationInference:
         with torch.no_grad():
             outputs = self.model(image_tensor)
             prediction = outputs[0] if isinstance(outputs, (list, tuple)) else outputs
-        binary_mask, probability_mask = self.postprocess_mask(prediction, original_size, threshold=0.7)
+        binary_mask, probability_mask = self.postprocess_mask(prediction, original_size, threshold=0.6)
         binary_mask = self.clean_mask(binary_mask)
         original_rgb = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
         return {
@@ -95,5 +95,6 @@ class PassportSegmentationInference:
             size = (413, 531)
         else:
             size = (600, 600)
-        return cv2.resize(image, size, interpolation=cv2.INTER_AREA)
+        return cv2.resize(image, size, interpolation=cv2.INTER_CUBIC)
+
 

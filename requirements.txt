@@ -1,9 +1,12 @@
 streamlit
-torch==2.0.1
-torchvision==0.15.2
+torch==2.0.1+cpu
+torchvision==0.15.2+cpu
+--extra-index-url https://download.pytorch.org/whl/cpu
 opencv-python-headless
 pillow
 albumentations
 numpy
 pandas
 huggingface-hub
+
+

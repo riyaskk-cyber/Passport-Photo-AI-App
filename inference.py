@@ -105,7 +105,7 @@ class PassportSegmentationInference:
             size = (413, 531)  # 35x45 mm
         else:
             size = (600, 600)
-        return cv2.resize(image, size, interpolation=cv2.INTER_CUBIC)  # smoother final resize
+        return cv2.resize(image, size, interpolation=cv2.INTER_AREA)  # 
 
 
 # If run directly
@@ -125,6 +125,7 @@ if __name__ == "__main__":
         out = inferencer.resize_passport(out, "passport")
         cv2.imwrite(os.path.join(OUTPUT_DIR, "sample_passport.jpg"), cv2.cvtColor(out, cv2.COLOR_RGB2BGR))
         print("✅ Saved improved passport photo.")
+
 
 
 

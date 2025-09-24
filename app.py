@@ -22,6 +22,37 @@ def load_inferencer():
 
 inferencer = load_inferencer()
 
+# ------------------ UTILITY FUNCTION FOR SIMPLE CROPPING ------------------
+def simple_center_crop(image, output_size):
+    """
+    Crops the image from the center to the specified output size.
+    """
+    h, w, _ = image.shape
+    target_w, target_h = output_size
+    
+    # Calculate the starting point for the crop
+    start_x = max(0, w // 2 - target_w // 2)
+    start_y = max(0, h // 2 - target_h // 2)
+    
+    # Calculate the ending point
+    end_x = start_x + target_w
+    end_y = start_y + target_h
+    
+    # Make sure the crop window doesn't go out of bounds
+    if end_x > w:
+        start_x -= (end_x - w)
+        end_x = w
+    if end_y > h:
+        start_y -= (end_y - h)
+        end_y = h
+    
+    cropped_img = image[start_y:end_y, start_x:end_x]
+    
+    # Resize to the final output size
+    resized_img = cv2.resize(cropped_img, output_size, interpolation=cv2.INTER_AREA)
+    
+    return resized_img
+
 # ------------------ PAGE CONFIG ------------------
 st.set_page_config(page_title="Passport Photo Generator", layout="wide")
 
@@ -106,30 +137,32 @@ if img_source:
     with st.spinner("⏳ Processing your photo..."):
         results = inferencer.predict_single_image(tmp_path)
 
+        # Apply background
         if bg_option == "White":
-            out_img = inferencer.apply_background(results["original_image"], results["binary_mask"], "white")
+            out_img_bgr = inferencer.apply_background(results["original_image"], results["binary_mask"], "white")
         elif bg_option == "Blue":
-            out_img = inferencer.apply_background(results["original_image"], results["binary_mask"], "blue")
+            out_img_bgr = inferencer.apply_background(results["original_image"], results["binary_mask"], "blue")
         else:
-            out_img = inferencer.apply_background(results["original_image"], results["binary_mask"], "transparent")
-
-        if crop_option.startswith("Passport"):
-            out_img = inferencer.resize_passport(out_img, "passport")
-        else:
-            out_img = inferencer.resize_passport(out_img, "visa")
+            out_img_bgr = inferencer.apply_background(results["original_image"], results["binary_mask"], "transparent")
+            
+        # Determine the final output size based on user choice
+        final_size = (600, 600) if crop_option.startswith("Passport") else (413, 531)
+        
+        # Apply the simple center cropping and resizing
+        final_img = simple_center_crop(out_img_bgr, final_size)
 
     st.success("✅ Done! Your photo is ready.")
 
     # Show preview (smaller)
-    st.image(out_img, caption="Processed Image", width=300)
+    st.image(cv2.cvtColor(final_img, cv2.COLOR_BGR2RGB) if bg_option != "Transparent" else final_img, caption="Processed Image", width=300)
 
     # Save for download
     if bg_option == "Transparent":
         dl_file = "output.png"
-        cv2.imwrite(dl_file, out_img)
+        cv2.imwrite(dl_file, final_img)
     else:
         dl_file = "output.jpg"
-        cv2.imwrite(dl_file, cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR))
+        cv2.imwrite(dl_file, final_img)
 
     with open(dl_file, "rb") as f:
         st.download_button(

@@ -3,18 +3,12 @@ import streamlit as st
 import numpy as np
 import cv2
 import torch
-from huggingface_hub import hf_hub_download
-
 from model import U2NET
 from inference import PassportSegmentationInference
 
 # ------------------ CONFIG ------------------
-MODEL_REPO = "kkriyas/u2net-finetuned"
-MODEL_FILE = "u2net_finetuned.pth"
+MODEL_PATH = "u2net_finetuned.pth"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-# Download model from Hugging Face if missing
-MODEL_PATH = hf_hub_download(repo_id=MODEL_REPO, filename=MODEL_FILE)
 
 @st.cache_resource
 def load_inferencer():
@@ -25,50 +19,11 @@ inferencer = load_inferencer()
 # ------------------ PAGE CONFIG ------------------
 st.set_page_config(page_title="Passport Photo Generator", layout="wide")
 
-# ------------------ CUSTOM STYLING ------------------
-st.markdown(
-    """
-    <style>
-    body {
-        background-color: #F7FBFF;
-    }
-    .main {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0px 4px 8px rgba(0,0,0,0.05);
-    }
-    h1 {
-        color: #2E86C1;
-        text-align: center;
-        font-family: 'Segoe UI', sans-serif;
-    }
-    h3 {
-        color: #1B4F72;
-        font-family: 'Segoe UI', sans-serif;
-    }
-    .stButton button {
-        background-color: #2E86C1;
-        color: white;
-        border-radius: 8px;
-        padding: 0.6em 1.2em;
-        font-size: 1em;
-        border: none;
-    }
-    .stButton button:hover {
-        background-color: #1B4F72;
-        color: white;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 # ------------------ HEADER ------------------
 st.markdown(
     """
-    <h1>📸 Passport / Visa Photo Generator</h1>
-    <p style="text-align:center; color:gray; font-size:16px;">
+    <h1 style='text-align:center; color:#2E86C1;'>📸 Passport Photo Generator</h1>
+    <p style='text-align:center; color:gray; font-size:16px;'>
         Upload or capture → AI segmentation → Background replacement → Passport-ready download
     </p>
     """,
@@ -78,7 +33,6 @@ st.markdown(
 # ------------------ DEMO ------------------
 st.markdown("### Generate Passport/ID Photos")
 
-# Input method selection
 choice = st.radio("Choose input method:", ["Upload", "Camera"], horizontal=True)
 img_source = None
 
@@ -92,27 +46,34 @@ elif choice == "Camera":
         img_source = camera_file
 
 if img_source:
-    # Read image
     file_bytes = np.asarray(bytearray(img_source.read()), dtype=np.uint8)
     image = cv2.imdecode(file_bytes, 1)
     tmp_path = "temp_input.jpg"
     cv2.imwrite(tmp_path, image)
 
-    # Options
     bg_option = st.radio("Background", ["White", "Blue", "Transparent"], horizontal=True)
     crop_option = st.radio("Output Size", ["Passport (600x600)", "Visa (413x531)"], horizontal=True)
+    resize_mode = st.radio("Cropping Mode", ["Fit Resize", "Center Crop"], horizontal=True)
 
-    # Run model with spinner
     with st.spinner("⏳ Processing your photo..."):
         results = inferencer.predict_single_image(tmp_path)
 
-        if bg_option == "White":
-            out_img = inferencer.apply_background(results["original_image"], results["binary_mask"], "white")
-        elif bg_option == "Blue":
-            out_img = inferencer.apply_background(results["original_image"], results["binary_mask"], "blue")
-        else:
-            out_img = inferencer.apply_background(results["original_image"], results["binary_mask"], "transparent")
+        # Background replacement
+        out_img = inferencer.apply_background(
+            results["original_image"],
+            results["probability_mask"],   # use soft mask
+            mode=bg_option.lower()
+        )
 
+        # Cropping
+        if resize_mode == "Center Crop":
+            h, w = out_img.shape[:2]
+            min_dim = min(h, w)
+            start_x = (w - min_dim) // 2
+            start_y = (h - min_dim) // 2
+            out_img = out_img[start_y:start_y+min_dim, start_x:start_x+min_dim]
+
+        # Resize
         if crop_option.startswith("Passport"):
             out_img = inferencer.resize_passport(out_img, "passport")
         else:

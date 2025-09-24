@@ -46,7 +46,7 @@ class PassportSegmentationInference:
 
     def postprocess_mask(self, prediction, original_size, threshold=0.6):
         mask = torch.sigmoid(prediction).squeeze().cpu().numpy()
-        mask_resized = cv2.resize(mask, original_size, interpolation=cv2.INTER_NEAREST)  # smoother edges
+        mask_resized = cv2.resize(mask, original_size, interpolation=cv2.INTER_CUBIC)  # smoother edges
         binary_mask = (mask_resized > threshold).astype(np.uint8)
         return binary_mask, mask_resized
 
@@ -125,6 +125,7 @@ if __name__ == "__main__":
         out = inferencer.resize_passport(out, "passport")
         cv2.imwrite(os.path.join(OUTPUT_DIR, "sample_passport.jpg"), cv2.cvtColor(out, cv2.COLOR_RGB2BGR))
         print("✅ Saved improved passport photo.")
+
 
 
 

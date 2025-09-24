@@ -28,7 +28,7 @@ class PassportSegmentationInference:
 
     def get_transform(self):
         return Compose([
-            Resize(256, 256),   # keep small for speed
+            Resize(256, 256),   
             Normalize(mean=[0.0, 0.0, 0.0], std=[1.0, 1.0, 1.0]),
             ToTensorV2(),
         ])
@@ -46,11 +46,11 @@ class PassportSegmentationInference:
 
     def postprocess_mask(self, prediction, original_size, threshold=0.6):
         mask = torch.sigmoid(prediction).squeeze().cpu().numpy()
-        mask_resized = cv2.resize(mask, original_size, interpolation=cv2.INTER_CUBIC)  # smoother edges
+        mask_resized = cv2.resize(mask, original_size, interpolation=cv2.INTER_NEAREST)  # smoother edges
         binary_mask = (mask_resized > threshold).astype(np.uint8)
         return binary_mask, mask_resized
 
-    def clean_mask(self, mask, kernel_size=3):
+    def clean_mask(self, mask, kernel_size=5):
         """Morphological cleaning, light to preserve edges"""
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
         cleaned = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_CLOSE, kernel)
@@ -125,6 +125,7 @@ if __name__ == "__main__":
         out = inferencer.resize_passport(out, "passport")
         cv2.imwrite(os.path.join(OUTPUT_DIR, "sample_passport.jpg"), cv2.cvtColor(out, cv2.COLOR_RGB2BGR))
         print("✅ Saved improved passport photo.")
+
 
 
 

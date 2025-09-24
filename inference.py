@@ -58,25 +58,35 @@ class PassportSegmentationInference:
         return cleaned
 
     def predict_single_image(self, image_path):
-        if self.model is None:
-            raise ValueError("Model not loaded properly")
-        image_tensor, original_image, original_size = self.preprocess_image(image_path)
-        image_tensor = image_tensor.to(self.device, dtype=torch.float32)
-        with torch.no_grad():
-            outputs = self.model(image_tensor)
-            if isinstance(outputs, (list, tuple)):
-                prediction = outputs[0]
-            else:
-                prediction = outputs
-        binary_mask, probability_mask = self.postprocess_mask(prediction, original_size, threshold=0.6)
-        binary_mask = self.clean_mask(binary_mask, kernel_size=3)
-        original_rgb = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
-        return {
-            'original_image': original_rgb,
-            'binary_mask': binary_mask,
-            'probability_mask': probability_mask,
-            'prediction_tensor': prediction
-        }
+    if self.model is None:
+        raise ValueError("Model not loaded properly")
+
+    # Preprocess input
+    image_tensor, original_image, original_size = self.preprocess_image(image_path)
+    image_tensor = image_tensor.to(self.device, dtype=torch.float32)
+
+    with torch.no_grad():
+        outputs = self.model(image_tensor)
+        prediction = outputs[0] if isinstance(outputs, (list, tuple)) else outputs
+
+    # Postprocess
+    binary_mask, probability_mask = self.postprocess_mask(
+        prediction, original_size, threshold=0.6
+    )
+
+    # Light cleaning only on binary mask
+    binary_mask = self.clean_mask(binary_mask, kernel_size=3)
+
+    # Convert original image to RGB
+    original_rgb = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+
+    return {
+        "original_image": original_rgb,
+        "binary_mask": binary_mask,            # still kept if needed
+        "probability_mask": probability_mask,  # used for feathered blending
+        "prediction_tensor": prediction
+    }
+
 
     def apply_background(self, image, mask, mode="white"):
     """

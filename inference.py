@@ -79,24 +79,38 @@ class PassportSegmentationInference:
         }
 
     def apply_background(self, image, mask, mode="white"):
-        """Use soft blending for smoother edges"""
-        # Smooth mask with Gaussian blur
-        soft_mask = cv2.GaussianBlur(mask.astype(np.float32), (5, 5), 0)
-        soft_mask = np.expand_dims(soft_mask, axis=2)  # shape (H, W, 1)
+    """
+    Apply background replacement with soft feathered edges.
+    Uses probability mask internally for smoother blending.
+    """
+    # If the mask is binary, convert to float
+    if mask.dtype == np.uint8:
+        soft_mask = mask.astype(np.float32)
+    else:
+        soft_mask = mask.copy()
 
-        if mode == "white":
-            bg = np.ones_like(image, dtype=np.uint8) * 255
-        elif mode == "blue":
-            bg = np.zeros_like(image, dtype=np.uint8)
-            bg[:] = (0, 0, 255)
-        elif mode == "transparent":
-            alpha = (soft_mask * 255).astype(np.uint8)
-            return np.dstack((image, alpha))
-        else:
-            bg = np.ones_like(image, dtype=np.uint8) * 255
+    # Smooth with Gaussian blur (feather edges)
+    soft_mask = cv2.GaussianBlur(soft_mask, (7, 7), 0)
+    soft_mask = np.clip(soft_mask, 0, 1)
 
-        blended = (image * soft_mask + bg * (1 - soft_mask)).astype(np.uint8)
-        return blended
+    # Expand to 3 channels
+    soft_mask_3ch = np.expand_dims(soft_mask, axis=2)
+
+    if mode == "white":
+        bg = np.ones_like(image, dtype=np.uint8) * 255
+    elif mode == "blue":
+        bg = np.zeros_like(image, dtype=np.uint8)
+        bg[:] = (180, 200, 255)
+    elif mode == "transparent":
+        alpha = (soft_mask * 255).astype(np.uint8)
+        return np.dstack((image, alpha))
+    else:
+        bg = np.ones_like(image, dtype=np.uint8) * 255
+
+    blended = (image * soft_mask_3ch + bg * (1 - soft_mask_3ch)).astype(np.uint8)
+    return blended
+
+
 
     def resize_passport(self, image, mode="passport"):
         if mode == "passport":
@@ -125,6 +139,7 @@ if __name__ == "__main__":
         out = inferencer.resize_passport(out, "passport")
         cv2.imwrite(os.path.join(OUTPUT_DIR, "sample_passport.jpg"), cv2.cvtColor(out, cv2.COLOR_RGB2BGR))
         print("✅ Saved improved passport photo.")
+
 
 
 
